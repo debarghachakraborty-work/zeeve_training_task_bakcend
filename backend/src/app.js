@@ -5,6 +5,7 @@ import passport from 'passport';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import createUserTable from '../data/createUserTable.js'
+import createOtpTable from '../data/createOtpTable.js'
 import authRoutes from './routes/auth.route.js'
 dotenv.config();
 const app = express();
@@ -23,7 +24,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
 
 //create the user table if not exists
-createUserTable();
+createUserTable();//next/migration read
+//create otps table
+createOtpTable();
 
 app.use('/api/auth',authRoutes);
 app.get('/',async(req,res)=>{

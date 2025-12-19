@@ -4,11 +4,16 @@ import {
   getUserByEmail,
 } from "../models/users.model.js"
 import { generateToken } from "../lib/util.js";
-//todo: add jwt token generation
+import { createOtp, getLatestOtpForUser, deleteOtpsForUser } from "../models/otps.model.js";
+import { sendOtpEmail } from "../lib/mailer.js";
+
 //this controller is for signup
 export const signUp = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, 
+      password 
+
+    } = req.body;
     if (
       !name ||
       !email ||
@@ -93,4 +98,62 @@ export const logout = (req, res) => {
   }
 }
 
+export const verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) return res.status(400).json({ message: 'Email and otp required' });
 
+    const user = await getUserByEmail(email);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const latest = await getLatestOtpForUser(user.id);
+    if (!latest) return res.status(400).json({ message: 'No OTP found' });
+
+    if (new Date(latest.expires_at) < new Date()) {
+      return res.status(400).json({ message: 'OTP expired' });
+    }
+
+    if (String(latest.otp) !== String(otp)) {
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+
+    // OTP valid — remove existing otps and issue token
+    await deleteOtpsForUser(user.id);
+    generateToken(user.id, res);
+
+    const sentUserData = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+    };
+
+    return res.status(200).json({ message: 'OTP verified', user: sentUserData });
+  } catch (error) {
+    console.log('Error in verifyOtp controller', error.message);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const resendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email required' });
+
+    const user = await getUserByEmail(email);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    await createOtp(user.id, otp, expiresAt);
+    await sendOtpEmail(user.email, otp);
+
+    return res.status(200).json({ message: 'OTP resent' });
+  } catch (error) {
+    console.log('Error in resendOtp controller', error.message);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+
+//containerize fe + be
+//run

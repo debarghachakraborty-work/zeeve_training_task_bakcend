@@ -2,11 +2,12 @@ import pool from '../../config/db.js'
 
 
 export async function createUser({name, email, password}) {
-    const query = `
+     query = `
     INSERT INTO users (name, email, password)
     VALUES ($1, $2, $3)
     RETURNING id,name,email;
     `
+    //todo trychatch implement
     const values = [name, email, password];
     const { rows } = await pool.query(query, values);
     return rows[0];

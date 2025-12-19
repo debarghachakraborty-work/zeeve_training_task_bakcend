@@ -5,3 +5,4 @@ create table if not exists users(
     password varchar(100) not null,
     created_at timestamp default now()
 )
+

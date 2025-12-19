@@ -11,7 +11,7 @@ const createUserTable = async() => {
             )
         `
         try {
-                pool.query(queryText);
+              await  pool.query(queryText);
                 console.log("User table created successfully");
         }catch(err){
                 console.error("Error creating user table", err);
